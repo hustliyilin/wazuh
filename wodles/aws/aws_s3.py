@@ -1121,7 +1121,8 @@ class AWSConfigBucket(AWSLogsBucket):
                 last_date_processed = str(query_date_last_log.fetchone()[0])
             # if DB is empty
             except (TypeError, IndexError) as e:
-                last_date_processed = self.default_date.strftime('%Y%m%d')
+                last_date_processed = self.only_logs_after.strftime('%Y%m%d') if self.only_logs_after is not None\
+                        else self.default_date.strftime('%Y%m%d')
         return last_date_processed
 
     def iter_regions_and_accounts(self, account_id, regions):
@@ -1553,7 +1554,8 @@ class AWSVPCFlowBucket(AWSLogsBucket):
             last_date_processed = str(query_date_last_log.fetchone()[0])
         # if DB is empty
         except (TypeError, IndexError) as e:
-            last_date_processed = self.default_date.strftime('%Y%m%d')
+            last_date_processed = self.only_logs_after.strftime('%Y%m%d') if self.only_logs_after is not None \
+                else self.default_date.strftime('%Y%m%d')
         return last_date_processed
 
     def iter_regions_and_accounts(self, account_id, regions):
