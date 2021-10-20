@@ -693,8 +693,8 @@ class AWSBucket(WazuhIntegration):
                 last_key = query_last_key.fetchone()[0]
             except (TypeError, IndexError) as e:
                 # if DB is empty for a region
-                filter_marker = self.marker_only_logs_after(aws_region, aws_account_id) if self.only_logs_after else \
-                    self.marker_custom_date(aws_region, aws_account_id, self.default_date)
+                filter_marker = self.marker_only_logs_after(aws_region, aws_account_id) if self.only_logs_after \
+                    is not None else self.marker_custom_date(aws_region, aws_account_id, self.default_date)
 
         filter_args = {
             'Bucket': self.bucket,
@@ -2053,6 +2053,7 @@ class AWSCustomBucket(AWSBucket):
 
     def build_s3_filter_args(self, aws_account_id, aws_region, iterating=False):
         filter_marker = ''
+        last_key = ''
         if self.reparse:
             if self.only_logs_after:
                 filter_marker = self.marker_only_logs_after(aws_account_id, aws_region)
@@ -2079,8 +2080,8 @@ class AWSCustomBucket(AWSBucket):
                 last_key = query_last_key.fetchone()[0]
             except (TypeError, IndexError) as e:
                 # if DB is empty for a service
-                filter_marker = self.marker_only_logs_after(aws_region, aws_account_id) if self.only_logs_after else \
-                    self.marker_custom_date(aws_region, aws_account_id, self.default_date)
+                filter_marker = self.marker_only_logs_after(aws_region, aws_account_id) if self.only_logs_after \
+                                is not None else self.marker_custom_date(aws_region, aws_account_id, self.default_date)
 
         filter_args = {
             'Bucket': self.bucket,
@@ -2307,7 +2308,7 @@ class AWSServerAccess(AWSCustomBucket):
             date = re.search(r'(\d{4}-\d{2}-\d{2}).*', downloaded_file)
             if date:
                 date = datetime.strptime(date.group(1), '%Y-%m-%d')
-                return date < self.only_logs_after if self.only_logs_after else date < self.default_date
+                return date < self.only_logs_after if self.only_logs_after is not None else date < self.default_date
             return False
 
         try:
@@ -2539,7 +2540,7 @@ class AWSService(WazuhIntegration):
                                 LIMIT {retain_db_records});"""
 
     def get_last_log_date(self):
-        date = self.only_logs_after if self.only_logs_after else self.default_date.strftime('%Y%m%d')
+        date = self.only_logs_after if self.only_logs_after is not None else self.default_date.strftime('%Y%m%d')
         return f'{date[0:4]}-{date[4:6]}-{date[6:8]} 00:00:00.0'
 
     def format_message(self, msg):
@@ -3153,7 +3154,7 @@ def arg_valid_regions(arg_string):
 
 def arg_valid_iam_role_duration(arg_string):
     """Checks if the role session duration specified is a valid parameter.
-only_logs_after
+
     Parameters
     ----------
     arg_string: str or None
