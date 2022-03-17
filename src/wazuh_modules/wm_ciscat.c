@@ -233,7 +233,7 @@ void* wm_ciscat_main(wm_ciscat *ciscat) {
                     if (IsFile(eval->path) < 0) {
                         mterror(WM_CISCAT_LOGTAG, "Benchmark file '%s' not found.", eval->path);
                     } else {
-                        wm_ciscat_run(eval, cis_path, id, ciscat->java_path);
+                        wm_ciscat_run(eval, cis_path, id, ciscat->java_path, ciscat->ciscat_binary);
                         ciscat->flags.error = 0;
                     }
                 }
@@ -444,13 +444,13 @@ void wm_ciscat_run(wm_ciscat_eval *eval, char *path, int id, const char *java_pa
 
 // Run a CIS-CAT policy for UNIX systems
 
-void wm_ciscat_run(wm_ciscat_eval *eval, char *path, int id, const char * java_path) {
+void wm_ciscat_run(wm_ciscat_eval *eval, char *path, int id, const char *java_path, const char *ciscat_binary) {
 
     char *command = NULL;
     int status, child_status;
     char *output = NULL;
     char msg[OS_MAXSTR];
-    char *ciscat_script = "./CIS-CAT.sh";
+    char tmp[OS_MAXSTR];
     wm_scan_data *scan_info = NULL;
     char pwd[PATH_MAX];
 
@@ -460,12 +460,11 @@ void wm_ciscat_run(wm_ciscat_eval *eval, char *path, int id, const char * java_p
     }
 
     // Create arguments
-
-    wm_strcat(&command, ciscat_script, '\0');
-
-    // Accepting Terms of Use
-
-    wm_strcat(&command, "-a", ' ');
+    strcpy(tmp, path);
+    strcat(tmp, "/");
+    
+    wm_strcat(&command, tmp, '/');    
+    wm_strcat(&command, ciscat_binary, '\0');
 
     switch (eval->type) {
     case WM_CISCAT_XCCDF:
@@ -488,33 +487,59 @@ void wm_ciscat_run(wm_ciscat_eval *eval, char *path, int id, const char * java_p
         pthread_exit(NULL);
     }
 
-    // Specify location for reports
-
-    wm_strcat(&command, "-r", ' ');
     char reports_path[PATH_MAX];
     os_snprintf(reports_path, sizeof(reports_path), "%s/%s", pwd, WM_CISCAT_REPORTS);
-    wm_strcat(&command, reports_path, ' ');
+    
+    // CIS-CAT Pro V3
+    if (!strcmp(ciscat_binary, WM_CISCAT_V3_BINARY)) {
+        // Accepting Terms of Use
 
-    // Set reports file name
+        wm_strcat(&command, "-a", ' ');
 
-    wm_strcat(&command, "-rn", ' ');
-    wm_strcat(&command, "ciscat-report", ' ');
+        // Specify location for reports
+        
+        wm_strcat(&command, "-r", ' ');
+        wm_strcat(&command, reports_path, ' ');
 
-    // Get xml reports
+        // Set reports file name
 
-    wm_strcat(&command, "-x", ' ');
+        wm_strcat(&command, "-rn", ' ');
+        wm_strcat(&command, "ciscat-report", ' ');
 
-    // Get txt reports
+        // Get xml reports
 
-    wm_strcat(&command, "-t", ' ');
+        wm_strcat(&command, "-x", ' ');
 
-    // Do not create HTML report
+        // Get txt reports
 
-    wm_strcat(&command, "-n", ' ');
+        wm_strcat(&command, "-t", ' ');
 
-    // Add not selected checks
+        // Do not create HTML report
 
-    wm_strcat(&command, "-y", ' ');
+        wm_strcat(&command, "-n", ' ');
+
+        // Add not selected checks
+
+        wm_strcat(&command, "-y", ' ');
+    } else if (!strcmp(ciscat_binary, WM_CISCAT_V4_BINARY)) {
+        // CIS-CAT Pro V4
+        
+        // Specify location for reports
+
+        wm_strcat(&command, "-rd", ' ');
+        wm_strcat(&command, reports_path, ' ');
+
+        // Set reports file name
+
+        wm_strcat(&command, "-rp", ' ');
+        wm_strcat(&command, "ciscat-report", ' ');
+
+        // Do not include the auto-generated timestamp as part of the report name
+        wm_strcat(&command, "-nts", ' ');
+
+        // Get txt reports
+        wm_strcat(&command, "-txt", ' ');
+    }
 
     // Send rootcheck message
 
@@ -532,11 +557,13 @@ void wm_ciscat_run(wm_ciscat_eval *eval, char *path, int id, const char * java_p
             // Child process
             setsid();
 
-            if (chdir(path) < 0) {
-                ciscat->flags.error = 1;
-                mterror(WM_CISCAT_LOGTAG, "Unable to change working directory: %s", strerror(errno));
-                os_free(command);
-                _exit(EXIT_FAILURE);
+            if (!strcmp(ciscat_binary, WM_CISCAT_V3_BINARY)) {
+                if (chdir(path) < 0) {
+                    ciscat->flags.error = 1;
+                    mterror(WM_CISCAT_LOGTAG, "Unable to change working directory: %s", strerror(errno));
+                    os_free(command);
+                    _exit(EXIT_FAILURE);
+                }
             }
 
             mtdebug2(WM_CISCAT_LOGTAG, "Changing working directory to %s", path);
