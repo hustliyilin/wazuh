@@ -541,6 +541,8 @@ void wm_ciscat_run(wm_ciscat_eval *eval, char *path, int id, const char *java_pa
         wm_strcat(&command, "-txt", ' ');
     }
 
+    mtinfo(WM_CISCAT_LOGTAG, "Launching command: %s", command);
+
     // Send rootcheck message
 
     snprintf(msg, OS_MAXSTR, "Starting CIS-CAT scan. File: %s. ", eval->path);
@@ -892,11 +894,11 @@ wm_scan_data* wm_ciscat_txt_parser(){
             }
         }
 
-        mtdebug1(WM_CISCAT_LOGTAG, "Finished parse of the TXT report.");
+        mtinfo(WM_CISCAT_LOGTAG, "Finished parse of the TXT report.");
 
         fclose(fp);
     } else {
-        mtdebug1(WM_CISCAT_LOGTAG, "Report result file '%s' missing: %s", file, strerror(errno));
+        mterror(WM_CISCAT_LOGTAG, "Report result file '%s' missing: %s", file, strerror(errno));
         ciscat->flags.error = 1;
     }
 
