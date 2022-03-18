@@ -27,7 +27,7 @@ static void wm_ciscat_destroy(wm_ciscat *ciscat);      // Destroy data
 #endif
 static void wm_ciscat_setup(wm_ciscat *_ciscat);       // Setup module
 static void wm_ciscat_check();                       // Check configuration, disable flag
-static void wm_ciscat_run(wm_ciscat_eval *eval, char *path, int id, const char * java_path);      // Run a CIS-CAT policy
+static void wm_ciscat_run(wm_ciscat_eval *eval, char *path, int id, const char *java_path, const char *ciscat_binary);      // Run a CIS-CAT policy
 static char * wm_ciscat_get_profile();               // Read evaluated profile from the report
 static void wm_ciscat_preparser();                   // Prepare report for the xml parser
 static wm_scan_data* wm_ciscat_txt_parser();        // Parse CIS-CAT csv reports
@@ -167,6 +167,18 @@ void* wm_ciscat_main(wm_ciscat *ciscat) {
         ciscat->flags.error = 1;
     }
 
+    #ifdef WIN32
+        if (strcmp(ciscat->ciscat_binary, WM_CISCAT_V3_BINARY_WIN) && strcmp(ciscat->ciscat_binary, WM_CISCAT_V4_BINARY_WIN)) {
+            mterror(WM_CISCAT_LOGTAG, "Unsupported CIS-CAT Binary '%s'.", ciscat->ciscat_binary);
+            ciscat->flags.error = 1;
+        }
+    #else
+        if (strcmp(ciscat->ciscat_binary, WM_CISCAT_V3_BINARY) && strcmp(ciscat->ciscat_binary, WM_CISCAT_V4_BINARY)) {
+            mterror(WM_CISCAT_LOGTAG, "Unsupported CIS-CAT Binary '%s'.", ciscat->ciscat_binary);
+            ciscat->flags.error = 1;
+        }
+    #endif
+
     // Main loop
 
     do {
@@ -284,7 +296,7 @@ void wm_ciscat_cleanup() {
 
 #ifdef WIN32
 
-void wm_ciscat_run(wm_ciscat_eval *eval, char *path, int id, const char * java_path) {
+void wm_ciscat_run(wm_ciscat_eval *eval, char *path, int id, const char *java_path, const char *ciscat_binary) {
     char *command = NULL;
     char msg[OS_MAXSTR];
     char *ciscat_script;
