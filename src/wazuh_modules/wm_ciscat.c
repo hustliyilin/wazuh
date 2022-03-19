@@ -168,11 +168,19 @@ void* wm_ciscat_main(wm_ciscat *ciscat) {
     }
 
     #ifdef WIN32
+        if (ciscat->ciscat_binary == '\0') {
+            ciscat->ciscat_binary = WM_CISCAT_V3_BINARY_WIN;
+        }
+
         if (strcmp(ciscat->ciscat_binary, WM_CISCAT_V3_BINARY_WIN) && strcmp(ciscat->ciscat_binary, WM_CISCAT_V4_BINARY_WIN)) {
             mterror(WM_CISCAT_LOGTAG, "Unsupported CIS-CAT Binary '%s'.", ciscat->ciscat_binary);
             ciscat->flags.error = 1;
         }
     #else
+        if (ciscat->ciscat_binary == '\0') {
+            ciscat->ciscat_binary = WM_CISCAT_V3_BINARY;
+        }
+
         if (strcmp(ciscat->ciscat_binary, WM_CISCAT_V3_BINARY) && strcmp(ciscat->ciscat_binary, WM_CISCAT_V4_BINARY)) {
             mterror(WM_CISCAT_LOGTAG, "Unsupported CIS-CAT Binary '%s'.", ciscat->ciscat_binary);
             ciscat->flags.error = 1;
